@@ -1,5 +1,7 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
     <head>
+        <title>rest2redis</title>
         <script>
             const webSocket = new WebSocket(`${location.protocol == 'https' ? 'wss' : 'ws'}://${location.host}/ws`);
             webSocket.onmessage = (event) => {
