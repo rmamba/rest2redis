@@ -1,0 +1,13 @@
+<div id="root"></div>
+<script>
+    const dataElement = document.getElementById('root');
+    const interval = setInterval(() => {
+        fetch('/throughput')
+            .then(res => res.json())
+            .then(data => {
+                dataElement.innerHTML = `${data.rate} req/sec`;
+            })
+        },
+        1000,
+    );
+</script>
