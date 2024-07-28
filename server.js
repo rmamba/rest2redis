@@ -1,4 +1,5 @@
 const express = require('express');
+const expressWs = require('express-ws');
 const cors = require('cors');
 const Redis = require('ioredis');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -21,6 +22,7 @@ if (UPDATE_INTERVAL < 250) {
 
 let redisClient;
 let loggedRequests = [];
+let openedWS = 0;
 const windowWidth = 10 * 1000; // aka 10 seconds
 
 setInterval(() => {
@@ -44,18 +46,12 @@ const run = async () => {
 
     console.log(`Setting up express server on port ${WEBUI_PORT}...`);
     const app = express();
+    expressWs(app);
     app.use(express.json());
     app.use(cors());
 
     app.get('/', function (req, res) {
-        res.sendfile('index.html');
-    });
-
-    app.get('/throughput', function (req, res) {
-        res.status(200);
-        res.json({
-            rate: (loggedRequests.length / 10).toFixed(2),
-        });
+        res.sendFile('index.html');
     });
 
     app.post('/:cmd/*', function (req, res) {
@@ -93,6 +89,28 @@ const run = async () => {
                 return;
         }
         res.status(200);
+    });
+
+    app.ws('/ws', function (ws, req) {
+        // ws.on('connection', (ws) => {
+            console.log('Client connected');
+            openedWS++;
+    
+            ws.on('close', function close() {
+                console.log('disconnected');
+                openedWS--;
+            });
+    
+            ws.on('error', console.error);
+        
+            setInterval(() => {
+                const data = {
+                    rate: (loggedRequests.length / 10).toFixed(2),
+                    websocketCount: openedWS,
+                };
+                ws.send(JSON.stringify(data));
+            }, 1000);
+        // });
     });
 
     app.listen(WEBUI_PORT)
