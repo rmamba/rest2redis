@@ -12,6 +12,8 @@ const REDIS_PASS = process.env.REDIS_PASS;
 const REDIS_PREFIX = process.env.REDIS_PREFIX || 'rest2redis';
 const REDIS_DB = parseInt(process.env.REDIS_DB || '7');
 
+const ALLOWED_API_KEYS = (process.env.ALLOWED_API_KEYS || '').split('|');
+
 let UPDATE_INTERVAL = parseInt(process.env.UPDATE_INTERVAL || '1000');
 if (UPDATE_INTERVAL < 250) {
     UPDATE_INTERVAL = 250;
@@ -57,6 +59,14 @@ const run = async () => {
     });
 
     app.post('/:cmd/*', function (req, res) {
+        if (ALLOWED_API_KEYS.length > 0) {
+            const apiKey = req.header('x-api-key');
+            if (!ALLOWED_API_KEYS.includes(apiKey)) {
+                res.status(401);
+                return;
+            }
+        }
+
         const cmd = req.params.cmd.toLowerCase();
         const url = req.url.split('/', -1).slice(2).join('/').replace(/\/+$/, '');
 
@@ -79,7 +89,7 @@ const run = async () => {
                 });
                 break;
             default:
-                res.status(400);
+                res.status(404);
                 return;
         }
         res.status(200);
