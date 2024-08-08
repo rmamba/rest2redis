@@ -2,45 +2,44 @@ const express = require('express');
 const expressWs = require('express-ws');
 const cors = require('cors');
 const Redis = require('ioredis');
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-const DEBUG = (process.env.DEBUG || 'false') === 'true';
+// const DEBUG = (process.env.DEBUG || 'false') === 'true';
 const WEBUI_PORT = parseInt(process.env.WEBUI_PORT || '3333');
 // redis://user:pass@server:port
-const REDIS_HOST_PORT = process.env.REDIS_HOST_PORT || 'localhost:6379';
+const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
+const REDIS_PORT = process.env.REDIS_PORT || '6379';
 const REDIS_USER = process.env.REDIS_USER;
 const REDIS_PASS = process.env.REDIS_PASS;
 const REDIS_PREFIX = process.env.REDIS_PREFIX || 'rest2redis';
 const REDIS_DB = parseInt(process.env.REDIS_DB || '7');
+const REFRESH_INTERVAL = parseInt(process.env.REFRESH_INTERVAL || '5');
+const LOGGING_WINDOW = parseInt(process.env.LOGGING_WINDOW || '10') * 1000;
 
 const ALLOWED_API_KEYS = (process.env.ALLOWED_API_KEYS || '').split('|');
-
-let UPDATE_INTERVAL = parseInt(process.env.UPDATE_INTERVAL || '1000');
-if (UPDATE_INTERVAL < 250) {
-    UPDATE_INTERVAL = 250;
-}
 
 let redisClient;
 let loggedRequests = [];
 let openedWS = 0;
-const windowWidth = 10 * 1000; // aka 10 seconds
 
 setInterval(() => {
-    const windowEnd = Date.now() - windowWidth;
+    const windowEnd = Date.now() - LOGGING_WINDOW;
     loggedRequests = loggedRequests.filter(r => r.ts > windowEnd);
 }, 1000);
 
 const run = async () => {
     console.log(`Connecting to ${REDIS_HOST_PORT}...`);
-    let redisUserPass = '';
+    const connectionConfig = {
+        host: REDIS_HOST,
+        port: REDIS_PORT,
+        db: REDIS_DB,
+    };
     if (REDIS_USER) {
-        redisUserPass = REDIS_USER;
+        connectionConfig.username = REDIS_USER;
     }
     if (REDIS_PASS) {
-        redisUserPass = `${redisUserPass}:${REDIS_PASS}`;
+        connectionConfig.password = REDIS_PASS;
     }
-    // Connect to 127.0.0.1:6380, db 4, using password "authpassword":
-    redisClient = new Redis(`redis://${redisUserPass}@${REDIS_HOST_PORT}/${REDIS_DB}`);
+    redisClient = new Redis(connectionConfig);
     redisClient.on('error', err => console.log('Redis Client Error', err));
     console.log('REDIS server connected...');
 
@@ -92,25 +91,31 @@ const run = async () => {
     });
 
     app.ws('/ws', function (ws, req) {
-        // ws.on('connection', (ws) => {
-            console.log('Client connected');
-            openedWS++;
+        console.log('Client connected');
+        openedWS++;
+
+        let refreshInterval = Math.max(REFRESH_INTERVAL, 1);
+        // if (ALLOWED_API_KEYS.length > 0) {
+        //     const apiKey = req.header('x-api-key');
+        //     if (ALLOWED_API_KEYS.includes(apiKey)) {
+        //         refreshInterval = 1;
+        //     }
+        // }
+
+        ws.on('close', function close() {
+            console.log('disconnected');
+            openedWS--;
+        });
+
+        ws.on('error', console.error);
     
-            ws.on('close', function close() {
-                console.log('disconnected');
-                openedWS--;
-            });
-    
-            ws.on('error', console.error);
-        
-            setInterval(() => {
-                const data = {
-                    rate: (loggedRequests.length / 10).toFixed(2),
-                    websocketCount: openedWS,
-                };
-                ws.send(JSON.stringify(data));
-            }, 1000);
-        // });
+        setInterval(() => {
+            const data = {
+                rate: (loggedRequests.length / 10).toFixed(2),
+                websocketCount: openedWS,
+            };
+            ws.send(JSON.stringify(data));
+        }, refreshInterval * 1000);
     });
 
     app.listen(WEBUI_PORT)
