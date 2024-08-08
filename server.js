@@ -4,7 +4,7 @@ const expressWs = require('express-ws');
 const cors = require('cors');
 const Redis = require('ioredis');
 
-// const DEBUG = (process.env.DEBUG || 'false') === 'true';
+const DEBUG = (process.env.DEBUG || 'false') === 'true';
 const WEBUI_PORT = parseInt(process.env.WEBUI_PORT || '3333');
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 const REDIS_PORT = process.env.REDIS_PORT || '6379';
@@ -91,7 +91,9 @@ const run = async () => {
     });
 
     app.ws('/ws', function (ws, req) {
-        console.log('Client connected');
+        if (DEBUG) {
+            console.log('Client connected');
+        }
         openedWS++;
 
         let refreshInterval = Math.max(REFRESH_INTERVAL, 1);
@@ -103,13 +105,21 @@ const run = async () => {
         // }
 
         ws.on('close', function close() {
-            console.log('disconnected');
+            if (DEBUG) {
+                console.log('Client disconnected...');
+            }
             openedWS--;
         });
 
-        ws.on('upgrade', (req, socket, head) => {
-            ws.handleUpgrade(req, socket, head, (websocket) => {
-                ws.emit("connection", websocket, req)
+        ws.on('upgrade', (request, socket, head) => {
+            if (DEBUG) {
+                console.log('Upgrade connection');
+            }
+            ws.handleUpgrade(request, socket, head, (websocket) => {
+                if (DEBUG) {
+                    console.log('Connection upgraded');
+                }
+                ws.emit("connection", websocket, request);
             });
         });
 
@@ -125,7 +135,7 @@ const run = async () => {
     });
 
     app.listen(WEBUI_PORT)
-    console.log('Done...');
+    console.log('Running...');
 }
 
 run();
