@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const expressWs = require('express-ws');
 const cors = require('cors');
@@ -5,7 +6,6 @@ const Redis = require('ioredis');
 
 // const DEBUG = (process.env.DEBUG || 'false') === 'true';
 const WEBUI_PORT = parseInt(process.env.WEBUI_PORT || '3333');
-// redis://user:pass@server:port
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 const REDIS_PORT = process.env.REDIS_PORT || '6379';
 const REDIS_USER = process.env.REDIS_USER;
@@ -50,7 +50,7 @@ const run = async () => {
     app.use(cors());
 
     app.get('/', function (req, res) {
-        res.sendFile('index.html');
+        res.sendFile(path.join(__dirname, 'index.html'));
     });
 
     app.post('/:cmd/*', function (req, res) {
