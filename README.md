@@ -6,14 +6,15 @@ This container will update Redis values everytime data is received via a API cal
 
 You can define REDIS connection via env variables like so:
 ```
-REDIS_HOST_PORT=localhost:6379
+REDIS_HOST=localhost
+REDIS_PORT=6379
 REDIS_USER=
 REDIS_PASS=
 REDIS_PREFIX=rest2redis
 REDIS_DB=10
 ```
 The values listed are default so you can only use the env variable if you want to change it.
-`REDIS_HOST_PORT` takes user name and password too as `redis://user:pass@server:port`.
+`REDIS_HOST` takes a user name, `REDIS_PASS` provides password.
 `REDIS_PREFIX` defines the prefix that is appended to the path before it is saved to Redis database.
 
 # API calls
@@ -29,5 +30,5 @@ http[s]://domain.com/{CMD}/{PATH}
 
 Start your container with this command replacing values to match your system:
 ```
-docker run --name rest2redis -e REDIS_HOST_PORT=localhost:6379 -e REDIS_PASS=1337 -e REDIS_DB=10 -d rmamba/rest2redis
+docker run --name rest2redis -e REDIS_HOST=redis -e REDIS_PASS=1337 -e REDIS_DB=10 -d rmamba/rest2redis
 ```

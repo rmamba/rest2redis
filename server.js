@@ -27,7 +27,7 @@ setInterval(() => {
 }, 1000);
 
 const run = async () => {
-    console.log(`Connecting to ${REDIS_HOST_PORT}...`);
+    console.log(`Connecting to ${REDIS_HOST}:${REDIS_PORT}...`);
     const connectionConfig = {
         host: REDIS_HOST,
         port: REDIS_PORT,
