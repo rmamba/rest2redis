@@ -107,6 +107,12 @@ const run = async () => {
             openedWS--;
         });
 
+        ws.on('upgrade', (req, socket, head) => {
+            ws.handleUpgrade(req, socket, head, (websocket) => {
+                ws.emit("connection", websocket, req)
+            });
+        });
+
         ws.on('error', console.error);
     
         setInterval(() => {
