@@ -70,7 +70,7 @@ const run = async () => {
         const url = req.url.split('/', -1).slice(2).join('/').replace(/\/+$/, '');
 
         if (DEBUG) {
-            console.log(`${cmd}[${url}]: `, len(req.body), ' bytes');
+            console.log(`${cmd}[${url}]: ${req.headers['content-length']} bytes`);
         }
 
         const topic = `${REDIS_PREFIX}/${url}`;
