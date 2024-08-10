@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const Redis = require('ioredis');
 
+const DEBUG = (process.env.DEBUG || 'false') === 'true';
+const HEADER_API_KEY = process.env.HEADER_API_KEY || 'x-api-key';
 const WEBUI_PORT = parseInt(process.env.WEBUI_PORT || '3333');
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 const REDIS_PORT = process.env.REDIS_PORT || '6379';
@@ -54,8 +56,11 @@ const run = async () => {
 
     app.post('/:cmd/*', function (req, res) {
         if (ALLOWED_API_KEYS.length > 0) {
-            const apiKey = req.header('x-api-key');
+            const apiKey = req.header(HEADER_API_KEY);
             if (!ALLOWED_API_KEYS.includes(apiKey)) {
+                if (DEBUG) {
+                    console.log('Invalid api-key: ', apiKey);
+                }
                 res.status(401);
                 return;
             }
@@ -64,7 +69,11 @@ const run = async () => {
         const cmd = req.params.cmd.toLowerCase();
         const url = req.url.split('/', -1).slice(2).join('/').replace(/\/+$/, '');
 
-        const topic = `${REDIS_PREFIX}/url`;
+        if (DEBUG) {
+            console.log(`${cmd}[${url}]: `, len(req.body), ' bytes');
+        }
+
+        const topic = `${REDIS_PREFIX}/${url}`;
         switch (cmd) {
             case 'publish':
                 redisClient.publish(topic, req.body);
