@@ -9,7 +9,7 @@
                 const dataElement = document.getElementById('throughput');
                 const countElement = document.getElementById('counter');
                 dataElement.innerHTML = `${data.rate} req/sec`;
-                countElement.innerHTML = `Handling ${data.websocketCount} connections`;
+                countElement.innerHTML = `Serving ${data.websocketCount} client${data.websocketCount>1?'s':''}`;
             };
         </script>
     </head>

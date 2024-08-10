@@ -99,7 +99,7 @@ const run = async () => {
 
     app.ws('/ws', function (ws, req) {
         if (DEBUG) {
-            console.log('Client connected');
+            console.log('Client connected: ', req);
         }
         openedWS++;
 
