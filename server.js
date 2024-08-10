@@ -90,13 +90,20 @@ const run = async () => {
         res.status(200);
     });
 
+    app.get('/ws', function(req, res, next) {
+        if (DEBUG) {
+            console.log('GET /ws');
+        }
+        res.end();
+        next();
+    });
+
     app.ws('/ws', function (ws, req) {
         if (DEBUG) {
             console.log('Client connected');
         }
         openedWS++;
 
-        let refreshInterval = Math.max(REFRESH_INTERVAL, 1);
         // if (ALLOWED_API_KEYS.length > 0) {
         //     const apiKey = req.header('x-api-key');
         //     if (ALLOWED_API_KEYS.includes(apiKey)) {
@@ -124,15 +131,19 @@ const run = async () => {
         });
 
         ws.on('error', console.error);
-    
-        setInterval(() => {
-            const data = {
-                rate: (loggedRequests.length / 10).toFixed(2),
-                websocketCount: openedWS,
-            };
-            ws.send(JSON.stringify(data));
-        }, refreshInterval * 1000);
     });
+
+    const aWss = expressWs.getWss('/ws');
+    let refreshInterval = Math.max(REFRESH_INTERVAL, 1);
+    setInterval(() => {
+        const data = {
+            rate: (loggedRequests.length / 10).toFixed(2),
+            websocketCount: openedWS,
+        };
+        aWss.clients.forEach(function (client) {
+            client.send(JSON.stringify(data));
+        });
+    }, refreshInterval * 1000);
 
     app.listen(WEBUI_PORT)
     console.log('Running...');
