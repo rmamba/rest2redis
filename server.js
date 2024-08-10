@@ -3,6 +3,7 @@ const cors = require('cors');
 const Redis = require('ioredis');
 
 const DEBUG = (process.env.DEBUG || 'false') === 'true';
+const DEBUG_RATE = (process.env.DEBUG_RATE || 'false') === 'true';
 const HEADER_API_KEY = process.env.HEADER_API_KEY || 'x-api-key';
 const WEBUI_PORT = parseInt(process.env.WEBUI_PORT || '3333');
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
@@ -94,6 +95,9 @@ const run = async () => {
             default:
                 res.status(404);
                 return;
+        }
+        if (DEBUG_RATE) {
+            console.log((loggedRequests.length / 10).toFixed(2));
         }
         res.status(200);
     });
