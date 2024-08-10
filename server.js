@@ -1,10 +1,7 @@
-const path = require('path');
 const express = require('express');
-const WebSocket = require('ws');
 const cors = require('cors');
 const Redis = require('ioredis');
 
-const DEBUG = (process.env.DEBUG || 'false') === 'true';
 const WEBUI_PORT = parseInt(process.env.WEBUI_PORT || '3333');
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 const REDIS_PORT = process.env.REDIS_PORT || '6379';
@@ -12,14 +9,12 @@ const REDIS_USER = process.env.REDIS_USER;
 const REDIS_PASS = process.env.REDIS_PASS;
 const REDIS_PREFIX = process.env.REDIS_PREFIX || 'rest2redis';
 const REDIS_DB = parseInt(process.env.REDIS_DB || '7');
-const REFRESH_INTERVAL = parseInt(process.env.REFRESH_INTERVAL || '5');
 const LOGGING_WINDOW = parseInt(process.env.LOGGING_WINDOW || '10') * 1000;
 
 const ALLOWED_API_KEYS = (process.env.ALLOWED_API_KEYS || '').split('|');
 
 let redisClient;
 let loggedRequests = [];
-let openedWS = 0;
 
 setInterval(() => {
     const windowEnd = Date.now() - LOGGING_WINDOW;
@@ -49,7 +44,12 @@ const run = async () => {
     app.use(cors());
 
     app.get('/', function (req, res) {
-        res.sendFile(path.join(__dirname, 'index.html'));
+        res.setHeader("Content-Type", "application/json");
+        res.status(200);
+        const data = {
+            rate: (loggedRequests.length / 10).toFixed(2),
+        };
+        res.json(data);
     });
 
     app.post('/:cmd/*', function (req, res) {
@@ -88,64 +88,6 @@ const run = async () => {
         }
         res.status(200);
     });
-
-    console.log(`Setting up websocket server on port ${WEBUI_PORT+1}...`);
-    const wss = new WebSocket.Server({ port: WEBUI_PORT+1 });
-
-    wss.on('connection', socket => {
-        if (DEBUG) {
-            console.log('Client connected...');
-        }
-
-        // Set up a function to handle when the client closes its connection
-        socket.onclose = () => {
-            if (DEBUG) {
-                console.log('Client disconnected...');
-            }
-        };
-
-        socket.onerror = err => console.error(err);
-    });
-
-    wss.on('upgrade', (request, socket) => {
-        // Get the client's request headers and cookies
-        const headers = request.headers;
-        
-        // Check if the client is making an upgrade request
-        if (headers['Upgrade'] === 'websocket') {
-            // Handle the upgrade request
-            if (DEBUG) {
-                console.log('Client is upgrading to a WebSocket connection');
-            }
-            
-            // Upgrade the socket connection
-            socket = new WebSocket(socket, { server: wss });
-
-            // Set up a function to handle when the client closes its connection
-            socket.onclose = () => {
-                if (DEBUG) {
-                    console.log('Upgraded Client disconnected...');
-                }
-            };
-            socket.onerror = err => console.error(err);
-        } else {
-            if (DEBUG) {
-                console.log('Force Close, no upgrade requested...');
-            }
-            socket.close();
-        }
-    });
-
-    let refreshInterval = Math.max(REFRESH_INTERVAL, 1);
-    setInterval(() => {
-        const data = {
-            rate: (loggedRequests.length / 10).toFixed(2),
-            websocketCount: wss.clients.size,
-        };
-        wss.clients.forEach(client => {
-            client.send(JSON.stringify(data));
-        });
-    }, refreshInterval * 1000);
 
     app.listen(WEBUI_PORT)
     console.log('Running...');
