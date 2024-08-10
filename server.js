@@ -62,7 +62,7 @@ const run = async () => {
                 if (DEBUG) {
                     console.log('Invalid api-key: ', apiKey);
                 }
-                res.status(401);
+                res.status(401).end();
                 return;
             }
         }
@@ -93,13 +93,13 @@ const run = async () => {
                 });
                 break;
             default:
-                res.status(404);
+                res.status(404).end();
                 return;
         }
         if (DEBUG_RATE) {
             console.log((loggedRequests.length / 10).toFixed(2));
         }
-        res.status(200);
+        res.status(200).end();
     });
 
     app.listen(WEBUI_PORT)
