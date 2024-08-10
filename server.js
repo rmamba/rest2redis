@@ -1,7 +1,6 @@
 const path = require('path');
 const express = require('express');
-const app = express();
-const expressWs = require('express-ws')(app);
+const WebSocket = require('ws');
 const cors = require('cors');
 const Redis = require('ioredis');
 
@@ -45,6 +44,7 @@ const run = async () => {
     console.log('REDIS server connected...');
 
     console.log(`Setting up express server on port ${WEBUI_PORT}...`);
+    const app = express();
     app.use(express.json());
     app.use(cors());
 
@@ -89,57 +89,60 @@ const run = async () => {
         res.status(200);
     });
 
-    app.get('/ws', function(req, res, next) {
+    console.log(`Setting up websocket server on port ${WEBUI_PORT+1}...`);
+    const wss = new WebSocket.Server({ port: WEBUI_PORT+1 });
+
+    wss.on('connection', socket => {
         if (DEBUG) {
-            console.log('GET /ws');
+            console.log('Client connected...');
         }
-        res.end();
-        next();
-    });
 
-    app.ws('/ws', function (ws, req) {
-        if (DEBUG) {
-            console.log('Client connected: ', req);
-        }
-        openedWS++;
-
-        // if (ALLOWED_API_KEYS.length > 0) {
-        //     const apiKey = req.header('x-api-key');
-        //     if (ALLOWED_API_KEYS.includes(apiKey)) {
-        //         refreshInterval = 1;
-        //     }
-        // }
-
-        ws.on('close', function close() {
+        // Set up a function to handle when the client closes its connection
+        socket.onclose = () => {
             if (DEBUG) {
                 console.log('Client disconnected...');
             }
-            openedWS--;
-        });
+        };
 
-        ws.on('upgrade', (request, socket, head) => {
-            if (DEBUG) {
-                console.log('Upgrade connection');
-            }
-            ws.handleUpgrade(request, socket, head, (websocket) => {
-                if (DEBUG) {
-                    console.log('Connection upgraded');
-                }
-                ws.emit("connection", websocket, request);
-            });
-        });
-
-        ws.on('error', console.error);
+        socket.onerror = err => console.error(err);
     });
 
-    const aWss = expressWs.getWss('/ws');
+    wss.on('upgrade', (request, socket) => {
+        // Get the client's request headers and cookies
+        const headers = request.headers;
+        
+        // Check if the client is making an upgrade request
+        if (headers['Upgrade'] === 'websocket') {
+            // Handle the upgrade request
+            if (DEBUG) {
+                console.log('Client is upgrading to a WebSocket connection');
+            }
+            
+            // Upgrade the socket connection
+            socket = new WebSocket(socket, { server: wss });
+
+            // Set up a function to handle when the client closes its connection
+            socket.onclose = () => {
+                if (DEBUG) {
+                    console.log('Upgraded Client disconnected...');
+                }
+            };
+            socket.onerror = err => console.error(err);
+        } else {
+            if (DEBUG) {
+                console.log('Force Close, no upgrade requested...');
+            }
+            socket.close();
+        }
+    });
+
     let refreshInterval = Math.max(REFRESH_INTERVAL, 1);
     setInterval(() => {
         const data = {
             rate: (loggedRequests.length / 10).toFixed(2),
-            websocketCount: openedWS,
+            websocketCount: wss.clients.size,
         };
-        aWss.clients.forEach(function (client) {
+        wss.clients.forEach(client => {
             client.send(JSON.stringify(data));
         });
     }, refreshInterval * 1000);

@@ -3,7 +3,7 @@
     <head>
         <title>rest2redis</title>
         <script>
-            const webSocket = new WebSocket(`${location.protocol == 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+            const webSocket = new WebSocket(location.protocol == 'https:' ? `wss://${location.host}/ws` : `ws://localhost:${parseInt(location.port)+1}`);
             webSocket.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 const dataElement = document.getElementById('throughput');
