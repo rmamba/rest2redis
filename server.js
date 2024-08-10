@@ -1,6 +1,7 @@
 const path = require('path');
 const express = require('express');
-const expressWs = require('express-ws');
+const app = express();
+const expressWs = require('express-ws')(app);
 const cors = require('cors');
 const Redis = require('ioredis');
 
@@ -44,8 +45,6 @@ const run = async () => {
     console.log('REDIS server connected...');
 
     console.log(`Setting up express server on port ${WEBUI_PORT}...`);
-    const app = express();
-    expressWs(app);
     app.use(express.json());
     app.use(cors());
 
