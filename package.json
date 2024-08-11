@@ -11,9 +11,6 @@
     "ioredis": "^5.4.1",
     "ws": "^8.18.0"
   },
-  "devDependencies": {
-    "artillery": "^2.0.19"
-  },
   "scripts": {
     "start": "node server.js",
     "loadtest": "artillery run load-test.yml"
