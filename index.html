@@ -9,7 +9,7 @@
         </style>
         <script>
             async function getData() {
-                const url = `${location.protocol}://${location.host}`;
+                const url = `${location.protocol}//${location.host}`;
                 try {
                     const response = await fetch(url);
                     if (!response.ok) {
