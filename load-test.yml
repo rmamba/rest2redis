@@ -30,10 +30,6 @@ config:
 scenarios:
   - flow:
       - loop:
-          # - get:
-          #     url: '/'
-          # - get:
-          #     url: '/stats'
           - post:
               url: '/set/loadTest'
               json:
