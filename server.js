@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const Redis = require('ioredis');
 const path = require('path');
+const FS = require('filesize');
 
 const DEBUG = (process.env.DEBUG || 'false') === 'true';
 const DEBUG_RATE = (process.env.DEBUG_RATE || 'false') === 'true';
@@ -13,7 +14,7 @@ const REDIS_USER = process.env.REDIS_USER;
 const REDIS_PASS = process.env.REDIS_PASS;
 const REDIS_PREFIX = process.env.REDIS_PREFIX || 'rest2redis';
 const REDIS_DB = parseInt(process.env.REDIS_DB || '7');
-const LOGGING_WINDOW = parseInt(process.env.LOGGING_WINDOW || '10') * 1000;
+const LOGGING_WINDOW = parseInt(process.env.LOGGING_WINDOW || '10');
 
 const ApiKeysString = process.env.ALLOWED_API_KEYS || '';
 const ALLOWED_API_KEYS = ApiKeysString ? ApiKeysString.split('|') : [];
@@ -22,7 +23,7 @@ let redisClient;
 let loggedRequests = [];
 
 setInterval(() => {
-    const windowEnd = Date.now() - LOGGING_WINDOW;
+    const windowEnd = Date.now() - (LOGGING_WINDOW * 1000);
     loggedRequests = loggedRequests.filter(r => r.ts > windowEnd);
 }, 1000);
 
@@ -52,7 +53,8 @@ const run = async () => {
         res.setHeader("Content-Type", "application/json");
         res.status(200);
         const data = {
-            rate: (loggedRequests.length / 10).toFixed(2),
+            rate: (loggedRequests.length / LOGGING_WINDOW).toFixed(2),
+            bytes: FS.filesize(loggedRequests.reduce((a, b) => a + b.size, 0)),
         };
         res.json(data);
     });
@@ -75,35 +77,34 @@ const run = async () => {
 
         const cmd = req.params.cmd.toLowerCase();
         const url = req.url.split('/', -1).slice(2).join('/').replace(/\/+$/, '');
+        const bodySize = parseInt(req.headers['content-length']);
 
         if (DEBUG) {
-            console.log(`${cmd}[${url}]: ${req.headers['content-length']} bytes`);
+            console.log(`${cmd}[${url}]: ${bodySize} bytes`);
         }
 
         const topic = `${REDIS_PREFIX}/${url}`;
+        const postData = {
+            ts: Date.now(),
+            topic: url,
+            type: cmd,
+            size: bodySize,
+        };
         switch (cmd) {
             case 'publish':
                 redisClient.publish(topic, req.body);
-                loggedRequests.push({
-                    ts: Date.now(),
-                    topic: url,
-                    type: cmd,
-                });
+                loggedRequests.push(postData);
                 break;
             case 'set':
                 redisClient.set(topic, req.body);
-                loggedRequests.push({
-                    ts: Date.now(),
-                    topic: url,
-                    type: cmd,
-                });
+                loggedRequests.push(postData);
                 break;
             default:
                 res.status(404).end();
                 return;
         }
         if (DEBUG_RATE) {
-            console.log((loggedRequests.length / 10).toFixed(2));
+            console.log((loggedRequests.length / LOGGING_WINDOW).toFixed(2));
         }
         res.status(200).end();
     });

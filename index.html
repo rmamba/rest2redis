@@ -18,7 +18,9 @@
 
                     const data = await response.json();
                     const dataElement = document.getElementById('throughput');
+                    const bytesElement = document.getElementById('bytes');
                     dataElement.innerHTML = `Handling ${data.rate} req/sec`;
+                    bytesElement.innerHTML = `Processing ${data.bytes}/sec`;
                 } catch (error) {
                     console.error(error.message);
                 }
@@ -31,5 +33,6 @@
     <body>
         <p>Grab sourcecode from <a href="https://github.com/rmamba/rest2redis">GitHUB</a>. Please like and share if you find it useful.</p>
         <div id="throughput"></div>
+        <div id="bytes"></div>
     </body>
 </html>

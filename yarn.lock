@@ -3887,6 +3887,11 @@ filelist@^1.0.4:
   dependencies:
     minimatch "^5.0.1"
 
+filesize@^10.1.4:
+  version "10.1.4"
+  resolved "https://registry.yarnpkg.com/filesize/-/filesize-10.1.4.tgz#184f256063a201f08b6e6b3cc47d21b60f5b8d89"
+  integrity sha512-ryBwPIIeErmxgPnm6cbESAzXjuEFubs+yKYLBZvg3CaiNcmkJChoOGcBSrZ6IwkMwPABwPpVXE6IlNdGJJrvEg==
+
 filing-cabinet@^4.1.6:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/filing-cabinet/-/filing-cabinet-4.2.0.tgz#bd81241edce6e0c051882bef7b69ffa4c017baf9"
