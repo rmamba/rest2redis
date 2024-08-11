@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const Redis = require('ioredis');
+const path = require('path');
 
 const DEBUG = (process.env.DEBUG || 'false') === 'true';
 const DEBUG_RATE = (process.env.DEBUG_RATE || 'false') === 'true';
@@ -53,6 +54,10 @@ const run = async () => {
             rate: (loggedRequests.length / 10).toFixed(2),
         };
         res.json(data);
+    });
+
+    app.get('/stats', function (req, res) {
+        res.sendFile(path.join(__dirname, 'index.html'));
     });
 
     app.post('/:cmd/*', function (req, res) {

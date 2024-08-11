@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>rest2redis stats</title>
+        <style>
+            body {
+                font-size: large;
+            }
+        </style>
+        <script>
+            async function getData() {
+                const url = `${location.protocol}://${location.host}`;
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`Response status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    const dataElement = document.getElementById('throughput');
+                    dataElement.innerHTML = `Handling ${data.rate} req/sec`;
+                } catch (error) {
+                    console.error(error.message);
+                }
+            }
+            setInterval(() => {
+                getData();
+            }, 1000);
+        </script>
+    </head>
+    <body>
+        <p>Grab sourcecode from <a href="https://github.com/rmamba/rest2redis">GitHUB</a>. Please like and share if you find it useful.</p>
+        <div id="throughput"></div>
+    </body>
+</html>
