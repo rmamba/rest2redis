@@ -15,7 +15,8 @@ const REDIS_PREFIX = process.env.REDIS_PREFIX || 'rest2redis';
 const REDIS_DB = parseInt(process.env.REDIS_DB || '7');
 const LOGGING_WINDOW = parseInt(process.env.LOGGING_WINDOW || '10') * 1000;
 
-const ALLOWED_API_KEYS = (process.env.ALLOWED_API_KEYS || '').split('|');
+const ApiKeysString = process.env.ALLOWED_API_KEYS || '';
+const ALLOWED_API_KEYS = ApiKeysString ? ApiKeysString.split('|') : [];
 
 let redisClient;
 let loggedRequests = [];
